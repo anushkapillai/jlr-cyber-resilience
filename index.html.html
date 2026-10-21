@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JLR Cyber Scenario Explorer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap">
+<style>
+/* Layout: dark masthead, then a controls column beside a results column; stacks on phones. */
+:root{
+  --bg:#EEF1EF; --surface:#FFFFFF; --ink:#17211C; --muted:#55605A; --line:#CFD6D2;
+  --accent:#0B5D34; --accent-ink:#FFFFFF; --accent-soft:#DCEBE2; --mast:#0F1A14; --mast-ink:#F2F5F3; --mast-muted:#B5C0BA; --mast-accent:#7CCB9A;
+  --warn:#9A3F2B; --warn-soft:#F3DDD6; --ok-soft:#D8EBDF;
+  --oA:#8A958F; --oB:#0B5D34; --oC:#5C7A91; --oD:#3FAE76;
+  --serif:'Source Serif 4',Georgia,'Times New Roman',serif; --sans:'Public Sans','Helvetica Neue',Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0C1510; --surface:#16231C; --ink:#E8EEEA; --muted:#A3B0A9; --line:#2A3B32;
+  --accent:#7CCB9A; --accent-ink:#0F1A14; --accent-soft:#1C2E25; --mast:#08100B; --warn:#E39A85; --warn-soft:#3A2019; --ok-soft:#1B3427;
+  --oA:#9AA6A0; --oB:#4FB27F; --oC:#7FA3BE; --oD:#A5E0BE; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0C1510; --surface:#16231C; --ink:#E8EEEA; --muted:#A3B0A9; --line:#2A3B32;
+  --accent:#7CCB9A; --accent-ink:#0F1A14; --accent-soft:#1C2E25; --mast:#08100B; --warn:#E39A85; --warn-soft:#3A2019; --ok-soft:#1B3427;
+  --oA:#9AA6A0; --oB:#4FB27F; --oC:#7FA3BE; --oD:#A5E0BE; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0}
+.wrap{max-width:1180px;margin:0 auto}
+.mast{background:var(--mast);color:var(--mast-ink);margin-inline:calc(-1*max(16px,env(safe-area-inset-left,0px))) ;padding:36px max(16px,env(safe-area-inset-right,0px)) 30px max(16px,env(safe-area-inset-left,0px))}
+.mast .wrap{border-left:6px solid #0B5D34;padding-left:20px}
+.eyebrow{font-size:13px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:var(--mast-accent);margin:0}
+h1{font-family:var(--serif);font-size:clamp(30px,5vw,48px);line-height:1.1;margin:8px 0 10px;text-wrap:balance;font-weight:700}
+.mast p.lede{margin:0;max-width:64ch;color:var(--mast-muted);font-size:18px}
+h2{font-family:var(--serif);font-size:24px;line-height:1.2;margin:0 0 6px;text-wrap:balance}
+h3{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 10px;font-weight:700}
+p{margin:0}
+.how{display:flex;gap:12px 28px;flex-wrap:wrap;padding:18px 0 6px;color:var(--muted);font-size:15px}
+.how p{max-width:60ch}
+.main{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:28px;align-items:start;padding-block:18px 28px}
+@media (max-width:900px){.main{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px}
+.controls{position:sticky;top:12px;display:flex;flex-direction:column;gap:18px}
+@media (max-width:900px){.controls{position:static}}
+.presets{display:flex;gap:8px;flex-wrap:wrap}
+button{font:inherit;cursor:pointer}
+.chip{border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:7px 12px;border-radius:999px;font-size:14px;font-weight:600}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.ctl{display:flex;flex-direction:column;gap:4px}
+.ctl .row{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.ctl label{font-weight:600;font-size:15px;line-height:1.3}
+.ctl output{font-family:var(--serif);font-weight:700;font-size:20px;color:var(--accent);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ctl .hint{font-size:13.5px;color:var(--muted);line-height:1.4}
+input[type=range]{width:100%;accent-color:var(--accent);margin:4px 0 0}
+.results{display:flex;flex-direction:column;gap:22px;min-width:0}
+.verdict{background:var(--mast);color:var(--mast-ink);border-radius:12px;padding:22px 24px;display:flex;flex-direction:column;gap:8px}
+.verdict h3{color:var(--mast-accent);margin:0}
+.verdict .big{font-family:var(--serif);font-size:clamp(22px,3.2vw,30px);line-height:1.2;font-weight:700;text-wrap:balance}
+.verdict .small{color:var(--mast-muted);font-size:15.5px;max-width:70ch}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 16px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.card.best{border:2px solid var(--accent)}
+.card .tag{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;line-height:1.25}
+.dot{width:12px;height:12px;border-radius:3px;flex:none}
+.card .val{font-family:var(--serif);font-size:34px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.card .val.neg{color:var(--warn)}
+.card .val.pos{color:var(--accent)}
+.card .desc{font-size:14px;color:var(--muted);line-height:1.4}
+.card dl{margin:4px 0 0;display:grid;grid-template-columns:1fr auto;gap:2px 10px;font-size:13.5px;color:var(--muted)}
+.card dd{margin:0;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink);font-weight:600}
+.badge{align-self:flex-start;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--accent);color:var(--accent-ink);padding:2px 8px;border-radius:999px}
+.chart{display:flex;flex-direction:column;gap:8px}
+.chart p.cap{color:var(--muted);font-size:14.5px;max-width:74ch}
+svg{display:block;width:100%;height:auto;overflow:visible}
+svg text{font-family:var(--sans);fill:var(--ink);font-size:12.5px}
+svg .m{fill:var(--muted)}
+svg .grid{stroke:var(--line);stroke-width:1}
+svg .zero{stroke:var(--ink);stroke-width:1.5}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13.5px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.table-scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:15px;min-width:520px}
+th{text-align:left;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:8px 10px;border-bottom:2px solid var(--line)}
+td{padding:10px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;vertical-align:top}
+th.n,td.n{text-align:right}
+.pill{display:inline-block;font-size:12.5px;font-weight:700;padding:2px 10px;border-radius:999px}
+.pill.ok{background:var(--ok-soft);color:var(--accent)}
+.pill.no{background:var(--warn-soft);color:var(--warn)}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}
+.facts .f{border-left:4px solid var(--accent);padding:2px 0 2px 14px}
+.facts .f b{font-family:var(--serif);font-size:26px;display:block;line-height:1.15}
+.facts .f span{font-size:14px;color:var(--muted)}
+details{font-size:14.5px;color:var(--muted)}
+details summary{cursor:pointer;font-weight:600;color:var(--ink)}
+details ul{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+footer{border-top:1px solid var(--line);padding-block:20px 36px;font-size:13.5px;color:var(--muted);display:flex;flex-direction:column;gap:8px}
+footer b{color:var(--ink)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+</head><body>
+<header class="mast"><div class="wrap">
+  <p class="eyebrow">Interactive scenario explorer</p>
+  <h1>JLR Cyber Scenario Explorer</h1>
+  <p class="lede">Change the assumptions and see which way of spending on cyber resilience pays off best over three years for a car maker hit by an attack like Jaguar Land Rover’s in 2025.</p>
+</div></header>
+
+<div class="wrap">
+  <div class="how">
+    <p><b>How to use it.</b> Pick a starting scenario or move the sliders on the left. The results on the right update straight away. Every cost, chance and time saving is an illustrative placeholder, not a JLR figure, so try your own.</p>
+    <p><b>How to read it.</b> “Net expected benefit” is the loss an option is expected to avoid over three years, minus what it costs. Below zero means it costs more than it is expected to save.</p>
+  </div>
+
+  <div class="main">
+    <aside class="panel controls" aria-label="Assumptions">
+      <div>
+        <h3>Start from a scenario</h3>
+        <div class="presets" role="group" aria-label="Scenario presets">
+          <button class="chip" data-preset="low" aria-pressed="false">Lower risk</button>
+          <button class="chip" data-preset="central" aria-pressed="true">Central</button>
+          <button class="chip" data-preset="high" aria-pressed="false">Higher risk</button>
+        </div>
+      </div>
+      <div class="ctl"><div class="row"><label for="p">Chance of a JLR-sized attack within three years</label><output id="p_o" for="p"></output></div>
+        <input type="range" id="p" min="1" max="50" step="1"><div class="hint">No public source gives this number. Official figures show serious attacks are rising.</div></div>
+      <div class="ctl"><div class="row"><label for="W">Weeks of output lost without a plan</label><output id="W_o" for="W"></output></div>
+        <input type="range" id="W" min="3" max="12" step="0.1"><div class="hint">JLR’s attack cost about 7.3 weeks of normal output in our estimate.</div></div>
+      <div class="ctl"><div class="row"><label for="s">Weeks a recovery plan saves</label><output id="s_o" for="s"></output></div>
+        <input type="range" id="s" min="0" max="6" step="0.1"><div class="hint">Only options B and D shorten the stop. Option A saves a quarter of this.</div></div>
+      <div class="ctl"><div class="row"><label for="m">Profit lost per £1 of lost sales</label><output id="m_o" for="m"></output></div>
+        <input type="range" id="m" min="10" max="35" step="1"><div class="hint">Lost sales are not all lost profit, because some costs stop when the factories stop.</div></div>
+      <div class="ctl"><div class="row"><label for="r">Share of the loss insurance pays back</label><output id="r_o" for="r"></output></div>
+        <input type="range" id="r" min="0" max="60" step="1"><div class="hint">Applies to options C and D, up to their policy limits (£150m and £100m).</div></div>
+      <div class="ctl"><div class="row"><label for="k">Programme cost compared with our estimate</label><output id="k_o" for="k"></output></div>
+        <input type="range" id="k" min="50" max="150" step="5"><div class="hint">100% means £150m, £80m, £45m and £135m for options A to D.</div></div>
+      <div class="ctl"><div class="row"><label for="q">Chance of a similar outage with no cyber cause</label><output id="q_o" for="q"></output></div>
+        <input type="range" id="q" min="0" max="15" step="1"><div class="hint">Options B and D also shorten these outages, which adds to their benefit.</div></div>
+      <button class="chip" id="reset" style="align-self:flex-start">Reset to central</button>
+    </aside>
+
+    <section class="results" aria-live="polite">
+      <div class="verdict">
+        <h3>What these assumptions say</h3>
+        <p class="big" id="v_big"></p>
+        <p class="small" id="v_small"></p>
+      </div>
+
+      <div class="cards" id="cards"></div>
+
+      <div class="panel chart">
+        <h2>Net expected benefit over three years</h2>
+        <p class="cap">Bars to the right of the line mean the option is expected to pay for itself. Bars to the left mean it costs more than the loss it is expected to avoid. Figures are in £ million.</p>
+        <div id="chart1"></div>
+      </div>
+
+      <div class="panel chart">
+        <h2>How the answer changes with the chance of an attack</h2>
+        <p class="cap">Each line shows one option. Where a line crosses zero, that option breaks even. The vertical marker shows the chance you have chosen. All other sliders stay as set.</p>
+        <div id="chart2"></div>
+        <div class="legend" id="legend2"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Does the staged plan clear its checkpoints?</h2>
+        <p class="cap" style="color:var(--muted);font-size:14.5px;margin-bottom:12px">We recommend paying for option B in four phases. Before each later phase, practice runs must show enough saved production time to justify the total spent so far. The weeks needed depend on the attack chance and profit margin you chose.</p>
+        <div class="table-scroll"><table>
+          <thead><tr><th>Checkpoint</th><th>It approves</th><th class="n">Total spend so far</th><th class="n">Weeks saved needed</th><th class="n">Weeks saved assumed</th><th>Result</th></tr></thead>
+          <tbody id="gates"></tbody>
+        </table></div>
+        <p style="color:var(--muted);font-size:14px;margin-top:10px">The executive deck uses a 20% chance of an attack for this table, which gives 0.9, 2.9 and 3.9 weeks. Set the chance to 20% to match it.</p>
+      </div>
+
+      <div class="panel">
+        <h2>How big is one attack?</h2>
+        <div class="facts" id="facts" style="margin-top:12px"></div>
+      </div>
+
+      <details class="panel">
+        <summary>What each option means and how the model works</summary>
+        <ul>
+          <li><b>A. Prevention first</b> spends on stopping attackers from getting in. It cuts the chance of an attack by 30% and saves a quarter of the recovery weeks.</li>
+          <li><b>B. Recovery first</b> assumes attackers will get in and spends on restoring systems quickly. It does not change the chance of an attack but saves the weeks you choose.</li>
+          <li><b>C. Insurance and financing</b> pays premiums and arranges credit so an insurer covers part of the loss, up to £150m.</li>
+          <li><b>D. Recovery plus extras</b> is option B plus some targeted prevention (10% fewer attacks) and an insurance policy with a £100m limit.</li>
+          <li><b>Event loss</b> equals weeks of output lost, times weekly sales of about £508m, times the profit lost per £1 of sales, plus a £260m one-off cost. The one-off cost is the figure in JLR’s Annual Report 2025/26.</li>
+          <li><b>Expected loss</b> equals the chance of the attack times the loss if it happens, plus the chance and loss of a non-cyber outage. Nothing is discounted over the three years.</li>
+        </ul>
+      </details>
+    </section>
+  </div>
+
+  <footer>
+    <p><b>Independent analysis using public information only. Not affiliated with or endorsed by JLR or Tata Motors.</b></p>
+    <p>Company facts come from JLR’s Annual Report 2025/26 (sales run rate, £260m one-off cyber cost, £6.9bn liquidity) and Insurance Business UK (September 2026, no cyber insurance in place). Programme costs, chances, time savings, margins and insurance recovery rates are illustrative placeholders chosen for this exercise. The chart and table are calculations from those inputs, not forecasts.</p>
+  </footer>
+</div>
+
+<script>
+(function(){
+  var REV=6600/13, PBT=2500, LIQ=6900, X=260;
+  var OPTS=[
+    {k:'A',name:'A. Prevention first',short:'Prevention first',cut:.30,share:.25,flag:0,limit:0,cost:150,desc:'Stops more attacks from getting in.',c:'var(--oA)'},
+    {k:'B',name:'B. Recovery first',short:'Recovery first',cut:0,share:1,flag:1,limit:0,cost:80,desc:'Restores systems faster after an attack.',c:'var(--oB)'},
+    {k:'C',name:'C. Insurance and financing',short:'Insurance',cut:0,share:0,flag:0,limit:150,cost:45,desc:'Pays part of the loss through insurance.',c:'var(--oC)'},
+    {k:'D',name:'D. Recovery plus extras',short:'Recovery plus extras',cut:.10,share:1,flag:1,limit:100,cost:135,desc:'Option B plus some prevention and insurance.',c:'var(--oD)'}
+  ];
+  var PRESETS={low:{p:5,W:6.3,s:1,m:15,r:33,k:100,q:0},central:{p:15,W:7.3,s:2,m:20,r:33,k:100,q:5},high:{p:30,W:8.9,s:3,m:25,r:33,k:100,q:10}};
+  var ids=['p','W','s','m','r','k','q'];
+  var el={};ids.forEach(function(i){el[i]=document.getElementById(i);el[i+'_o']=document.getElementById(i+'_o')});
+
+  function fm(v,d){var a=Math.abs(v),dd=d==null?0:d,f=Math.pow(10,dd),s=(Math.round(a*f-1e-9)/f).toFixed(dd);return (v<0?'−':(v>0?'+':''))+'£'+s+'m'}
+  function fplain(v,d){var dd=d==null?0:d,f=Math.pow(10,dd);return '£'+(Math.round(Math.abs(v)*f-1e-9)/f).toLocaleString('en-GB',{minimumFractionDigits:dd,maximumFractionDigits:dd})+'m'}
+  function read(){return {p:+el.p.value/100,W:+el.W.value,s:+el.s.value,m:+el.m.value/100,r:+el.r.value/100,k:+el.k.value/100,q:+el.q.value/100}}
+
+  function calc(S,pOverride){
+    var p=pOverride==null?S.p:pOverride;
+    var loss0=S.W*REV*S.m+X, nc0=S.q*S.W*REV*S.m, tot0=p*loss0+nc0;
+    var out=OPTS.map(function(o){
+      var po=p*(1-o.cut), Wo=S.W-S.s*o.share;
+      var before=Wo*REV*S.m+X, ins=Math.min(o.limit,S.r*before), net=before-ins;
+      var Wnc=S.W-S.s*o.share*o.flag, ncO=S.q*Wnc*REV*S.m;
+      var tot=po*net+ncO, avoided=tot0-tot, cost=o.cost*S.k, nb=avoided-cost;
+      var den=loss0-(1-o.cut)*net, be=den<=0?null:Math.max(0,cost-(nc0-ncO))/den;
+      return {o:o,po:po,Wo:Wo,net:net,avoided:avoided,cost:cost,nb:nb,be:be,reduction:loss0-net};
+    });
+    return {loss0:loss0,tot0:tot0,opts:out};
+  }
+
+  function nice(v){return Math.ceil(v/50)*50}
+  function svgEl(h){return h}
+
+  function chart1(R){
+    var W=Math.max(300,document.getElementById('chart1').clientWidth||720),sm=W<520,L=sm?14:190,Rr=sm?56:64,T=10,B=26,n=R.opts.length,H=sm?n*56+T+B:210,rowH=(H-T-B)/n;
+    var vals=R.opts.map(function(x){return x.nb});
+    var lo=Math.min(0,Math.min.apply(null,vals)),hi=Math.max(0,Math.max.apply(null,vals));
+    lo=-nice((-lo||50)*1.35);hi=nice((hi||50)*1.35);
+    var x=function(v){return L+(v-lo)/(hi-lo)*(W-L-Rr)};
+    var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Net expected benefit of each option in £ million">';
+    var step=(hi-lo)/(sm?4:6)>100?200:((hi-lo)/(sm?4:6)>50?100:50);
+    for(var t=Math.ceil(lo/step)*step;t<=hi;t+=step){s+='<line class="grid" x1="'+x(t)+'" x2="'+x(t)+'" y1="'+T+'" y2="'+(H-B)+'"/><text class="m" x="'+x(t)+'" y="'+(H-8)+'" text-anchor="middle">'+(t<0?'−':'')+Math.abs(t)+'</text>'}
+    R.opts.forEach(function(r,i){
+      var y=sm?T+i*rowH+22:T+i*rowH+rowH*.18,h=sm?24:rowH*.64,x0=x(0),x1=x(r.nb);
+      s+=sm?'<text x="'+L+'" y="'+(T+i*rowH+14)+'" font-weight="600">'+r.o.short+'</text>':'<text x="'+(L-12)+'" y="'+(y+h/2+4)+'" text-anchor="end" font-weight="600">'+r.o.short+'</text>';
+      s+='<rect x="'+Math.min(x0,x1)+'" y="'+y+'" width="'+Math.max(1,Math.abs(x1-x0))+'" height="'+h+'" rx="3" fill="'+r.o.c+'"/>';
+      var lab=fm(r.nb), anchorRight=r.nb>=0;
+      s+='<text x="'+(anchorRight?x1+8:x1-8)+'" y="'+(y+h/2+4)+'" text-anchor="'+(anchorRight?'start':'end')+'" font-weight="700">'+lab+'</text>';
+    });
+    s+='<line class="zero" x1="'+x(0)+'" x2="'+x(0)+'" y1="'+T+'" y2="'+(H-B)+'"/></svg>';
+    document.getElementById('chart1').innerHTML=s;
+  }
+
+  function chart2(S){
+    var W=Math.max(300,document.getElementById('chart2').clientWidth||720),H=W<520?270:300,L=52,Rr=16,T=14,B=40,xs=[],ps=[];
+    for(var i=1;i<=50;i++)ps.push(i/100);
+    var series=OPTS.map(function(o,idx){return ps.map(function(p){return calc(S,p).opts[idx].nb})});
+    var all=[].concat.apply([],series),lo=Math.min(0,Math.min.apply(null,all)),hi=Math.max(0,Math.max.apply(null,all));
+    lo=-nice(-lo||50);hi=nice(hi||50);
+    var x=function(p){return L+(p-.01)/.49*(W-L-Rr)},y=function(v){return T+(hi-v)/(hi-lo)*(H-T-B)};
+    var step=(hi-lo)>600?200:((hi-lo)>300?100:50);
+    var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Net expected benefit of each option as the chance of an attack changes">';
+    for(var t=Math.ceil(lo/step)*step;t<=hi;t+=step){s+='<line class="grid" x1="'+L+'" x2="'+(W-Rr)+'" y1="'+y(t)+'" y2="'+y(t)+'"/><text class="m" x="'+(L-8)+'" y="'+(y(t)+4)+'" text-anchor="end">'+(t<0?'−':'')+Math.abs(t)+'</text>'}
+    [0,10,20,30,40,50].forEach(function(pc){if(W<520&&pc%20)return;var px=x(Math.max(.01,pc/100));s+='<text class="m" x="'+px+'" y="'+(H-18)+'" text-anchor="middle">'+pc+'%</text>'});
+    s+='<text class="m" x="'+((L+W-Rr)/2)+'" y="'+(H-2)+'" text-anchor="middle">Chance of a JLR-sized attack within three years</text>';
+    s+='<text class="m" transform="translate(12 '+((T+H-B)/2)+') rotate(-90)" text-anchor="middle">Net benefit, £m</text>';
+    s+='<line class="zero" x1="'+L+'" x2="'+(W-Rr)+'" y1="'+y(0)+'" y2="'+y(0)+'"/>';
+    series.forEach(function(sr,i){var d=sr.map(function(v,j){return (j?'L':'M')+x(ps[j]).toFixed(1)+' '+y(v).toFixed(1)}).join(' ');
+      s+='<path d="'+d+'" fill="none" stroke="'+OPTS[i].c+'" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>'});
+    var px=x(S.p);
+    s+='<line x1="'+px+'" x2="'+px+'" y1="'+T+'" y2="'+(H-B)+'" stroke="var(--ink)" stroke-width="1.5" stroke-dasharray="5 4"/>';
+    var cur=calc(S).opts;
+    cur.forEach(function(r,i){s+='<circle cx="'+px+'" cy="'+y(r.nb)+'" r="5" fill="'+OPTS[i].c+'" stroke="var(--surface)" stroke-width="2"/>'});
+    s+='</svg>';
+    document.getElementById('chart2').innerHTML=s;
+  }
+
+  function render(){
+    var S=read();
+    ids.forEach(function(i){var v=el[i].value,o=el[i+'_o'];o.textContent=(i==='W'||i==='s')?(+v).toFixed(1)+' weeks':v+'%'});
+    var R=calc(S),best=R.opts.slice().sort(function(a,b){return b.nb-a.nb})[0];
+
+    // verdict
+    var big,small;
+    if(best.nb>0){big='With these assumptions, “'+best.o.short.toLowerCase()+'” comes out best: it is expected to save about '+fplain(best.nb)+' more than it costs over three years.';}
+    else{big='With these assumptions, no option pays for itself. The least costly is “'+best.o.short.toLowerCase()+'”, which is expected to lose about '+fplain(best.nb)+' net over three years.';}
+    var paying=R.opts.filter(function(r){return r.nb>0}).map(function(r){return r.o.k});
+    small=paying.length?('Options that pay for themselves here: '+paying.join(', ')+'. A negative result does not mean an option is pointless. It means the protection costs more than the loss it is expected to avoid on these numbers.'):'A negative result does not mean an option is pointless. It means the protection costs more than the loss it is expected to avoid on these numbers. Raise the chance of an attack or the weeks saved to see when that changes.';
+    document.getElementById('v_big').textContent=big;
+    document.getElementById('v_small').textContent=small;
+
+    // cards
+    document.getElementById('cards').innerHTML=R.opts.map(function(r){
+      var isBest=r===best;
+      return '<div class="card'+(isBest?' best':'')+'">'+(isBest?'<span class="badge">'+(best.nb>0?'Best on these numbers':'Smallest net cost')+'</span>':'')+
+      '<div class="tag"><span class="dot" style="background:'+r.o.c+'"></span>'+r.o.name+'</div>'+
+      '<div class="val '+(r.nb<0?'neg':'pos')+'">'+fm(r.nb)+'</div>'+
+      '<div class="desc">'+r.o.desc+'</div>'+
+      '<dl><dt>Three-year cost</dt><dd>'+fplain(r.cost)+'</dd><dt>Loss avoided</dt><dd>'+fplain(r.avoided,0)+'</dd><dt>Loss if attacked</dt><dd>'+fplain(r.net)+'</dd><dt>Break-even chance</dt><dd>'+(r.be==null?'never':(r.be>1?'over 100%':Math.round(r.be*100)+'%'))+'</dd></dl></div>';
+    }).join('');
+
+    chart1(R);chart2(S);
+    document.getElementById('legend2').innerHTML=OPTS.map(function(o){return '<span><span class="dot" style="background:'+o.c+'"></span>'+o.name+'</span>'}).join('');
+
+    // gates (option B in phases, scaled by cost slider)
+    var wk=REV*S.m*S.p, ph=[3,15,40,22].map(function(v){return v*S.k}), cum=[ph[0]+ph[1],ph[0]+ph[1]+ph[2],ph[0]+ph[1]+ph[2]+ph[3]];
+    var rows=[['Gate 0','Phase 1',cum[0]],['Gate 1','Phase 2',cum[1]],['Gate 2','Phase 3',cum[2]]];
+    document.getElementById('gates').innerHTML=rows.map(function(r){
+      var need=r[2]/wk, ok=S.s>=need;
+      return '<tr><td><b>'+r[0]+'</b></td><td>'+r[1]+'</td><td class="n">'+fplain(r[2])+'</td><td class="n">'+need.toFixed(1)+'</td><td class="n">'+S.s.toFixed(1)+'</td><td><span class="pill '+(ok?'ok':'no')+'">'+(ok?'Clears':'Fails')+'</span></td></tr>';
+    }).join('');
+
+    // facts
+    var pct=R.loss0/PBT*100;
+    document.getElementById('facts').innerHTML=
+      '<div class="f"><b>'+fplain(R.loss0)+'</b><span>Total loss if a JLR-sized attack happens and nothing is done, including the £260m one-off cost.</span></div>'+
+      '<div class="f"><b>'+Math.round(pct)+'%</b><span>That loss as a share of JLR’s £2.5bn profit before tax in the year before the attack.</span></div>'+
+      '<div class="f"><b>'+(LIQ/R.loss0).toFixed(1)+' times</b><span>How many such losses JLR’s £6.9bn of available cash and credit at March 2026 could cover.</span></div>'+
+      '<div class="f"><b>'+fplain(R.tot0)+'</b><span>Expected loss over three years with no plan, which is the chance of an attack times its loss, plus non-cyber outages.</span></div>';
+
+    // preset pressed state
+    document.querySelectorAll('[data-preset]').forEach(function(b){
+      var P=PRESETS[b.dataset.preset],same=ids.every(function(i){return Math.abs(+el[i].value-P[i])<1e-9});
+      b.setAttribute('aria-pressed',same?'true':'false');
+    });
+  }
+
+  function apply(P){ids.forEach(function(i){el[i].value=P[i]});render()}
+  ids.forEach(function(i){el[i].addEventListener('input',render)});
+  document.querySelectorAll('[data-preset]').forEach(function(b){b.addEventListener('click',function(){apply(PRESETS[b.dataset.preset])})});
+  document.getElementById('reset').addEventListener('click',function(){apply(PRESETS.central)});
+  apply(PRESETS.central);
+  var rt;window.addEventListener('resize',function(){clearTimeout(rt);rt=setTimeout(render,120)});
+})();
+</script>
+
+</body></html>
