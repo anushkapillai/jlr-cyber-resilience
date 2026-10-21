@@ -8,8 +8,7 @@ This is an independent consulting-style case study of the 2025 cyber attack on J
 
 ## Try it
 
-**Interactive scenario explorer:** 
-
+**Interactive scenario explorer:** [https://anushkapillai.github.io/jlr-cyber-resilience/](https://anushkapillai.github.io/jlr-cyber-resilience/)
 
 Move the sliders for the chance of an attack, weeks of output lost, weeks a recovery plan saves, profit margin, insurance payout and programme cost. The page shows which option pays off best on those assumptions.
 
